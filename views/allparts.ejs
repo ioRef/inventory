@@ -46,6 +46,7 @@
     <tr>
       <th> Part Number </th>
       <th> Short Name </th>
+      <th> Description </th>
       <th> Status </th>
       <th> On Hand </th>
       <th> Min </th>
@@ -59,6 +60,7 @@
         <tr>
         <td> <a href="parts?partNumber=<%= part.part_number %>"><%= part.part_number %></a> </td>
         <td> <%= part.name %></td>
+        <td> <%= part.description %></td>
         <td> <%= part.status %> </td>
         <td> <%= part.current_inventory + part.current_backstock %> </td>
         <td> <%= part.min_quantity %> </td>
