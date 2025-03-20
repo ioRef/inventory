@@ -36,7 +36,7 @@
 <body>
     <div class="part-info">
         <br>
-      <form action="/parts" method="GET">
+      <form action="parts" method="GET">
         <input type="text" name="partNumber" placeholder="Enter Part Number">
         <button type="submit">Search</button>
       </form>
@@ -57,8 +57,8 @@
       <th> Cost of Restock </tr>
       <% parts.sort((a, b) => ((a.current_backstock + a.current_inventory) - a.min_quantity) - ((b.current_backstock + b.current_inventory) - b.min_quantity)).forEach(part => { %>
         <tr>
-        <td> <a href="/parts?partNumber=<%= part.part_num %>"><%= part.part_num %></a> </td>
-        <td> <%= part.short_name %></td>
+        <td> <a href="parts?partNumber=<%= part.part_number %>"><%= part.part_number %></a> </td>
+        <td> <%= part.name %></td>
         <td> <%= part.status %> </td>
         <td> <%= part.current_inventory + part.current_backstock %> </td>
         <td> <%= part.min_quantity %> </td>

@@ -4,6 +4,7 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const port = 3000;
 const iorefURL = 'http://127.0.0.1:8055';
+const appPrefix = '/inventory';
 const accessToken = '_dtEPdhNFAh1BuISj341frrfAYa-7hMt';
 const app = express();
 
@@ -30,7 +31,7 @@ app.set('view engine', 'ejs');
 
 // Parse JSON bodies
 app.use(bodyParser.json());
-
+//addepalli/IDeATe-Inventory.git
 // Parse URL-encoded bodies
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -41,7 +42,7 @@ app.get('/', (req, res) => {
 
 app.get('/api/partdetails', (req, res) => {
   const partNumber  = req.query.partNumber;
-  axios.get(`${iorefURL}/items/parts/?filter[part_num][_eq]=${partNumber}&access_token=${accessToken}`)
+  axios.get(`${iorefURL}/items/parts/?filter[part_number][_eq]=${partNumber}&access_token=${accessToken}`)
 .then(response => {
   res.send(response.data.data[0]);
 }).catch(error => {
@@ -71,13 +72,20 @@ app.get('/parts', (req, res) => {
   }
 
   else{
-  axios.get(`${iorefURL}/items/parts/?filter[part_num][_eq]=${partNumber}&access_token=${accessToken}`)
-    .then(response => {
-      const parts = response.data.data;
+      axios.get(`${iorefURL}/items/parts/?filter[part_number][_eq]=${partNumber}&access_token=${accessToken}`)
+	  .then(response => {
+
+	      const parts = response.data.data;
+
       if (parts.length === 0) {
-        res.render('error', { error: 'Part not found.' });
+          res.render('error', { error: 'Part not found.' });
+	  return;
       }
       const part = parts[0];
+      if (part == null) {
+          res.render('error', { error: 'Part not valid.' });
+	  return;
+      }
 
       let latest_inventory = "No inventory history";
       let latest_backstock = "No backstock history";
@@ -92,7 +100,7 @@ app.get('/parts', (req, res) => {
       let chartbackstock_dates = [];
       let backstock_values = [];
 
-      if (part.inventory_history !== null){
+      if (part.inventory_history != null){
         const inventory_history = (part.inventory_history);
         const inventory_dates = Object.keys(inventory_history);
         inventory_dates.sort((a, b) => new Date(a) - new Date(b));
@@ -103,9 +111,9 @@ app.get('/parts', (req, res) => {
         chartinventory_dates = Object.keys(sortedInventoryHistory).map(dateString => new Date(dateString));
         inventory_values = Object.values(sortedInventoryHistory);
 
-        latest_inventory = inventory_history[inventory_dates[inventory_dates.length - 1]] + " " + part.unit + " as of " + inventory_dates[inventory_dates.length - 1];
+        latest_inventory = inventory_history[inventory_dates[inventory_dates.length - 1]] + " item(s) as of " + inventory_dates[inventory_dates.length - 1];
       }
-      if (part.backstock_history !== null){
+      if (part.backstock_history != null){
       const backstock_history = (part.backstock_history);
       const backstock_dates = Object.keys(backstock_history);
         backstock_dates.sort((a, b) => new Date(a) - new Date(b));
@@ -118,7 +126,7 @@ app.get('/parts', (req, res) => {
 
       latest_backstock = backstock_history[backstock_dates[backstock_dates.length - 1]] + " " + part.unit + " as of " + backstock_dates[backstock_dates.length - 1];
       }
-        if (part.price_history !== null){
+        if (part.price_history != null){
         const price_history = (part.price_history);
         const price_dates = Object.keys(price_history);
         price_dates.sort((a, b) => new Date(a) - new Date(b));
@@ -131,13 +139,13 @@ app.get('/parts', (req, res) => {
         
         latest_price = "$" + price_history[price_dates[price_dates.length - 1]] + " per " + part.unit + " as of " + price_dates[price_dates.length - 1];
         }
-        if (part.supplier_history !== null){
+        if (part.supplier_history != null){
           const supplier_history = (part.supplier_history);
           const supplier_dates = Object.keys(supplier_history);
           supplier_dates.sort((a, b) => new Date(a) - new Date(b));
           latest_supplier = supplier_history[supplier_dates[supplier_dates.length - 1]];
         }
-        if (part.purchase_link_history !== null){
+        if (part.purchase_link_history != null){
             const purchase_link_history = (part.purchase_link_history);
             const purchase_link_dates = Object.keys(purchase_link_history);
             purchase_link_dates.sort((a, b) => new Date(a) - new Date(b));
@@ -146,7 +154,7 @@ app.get('/parts', (req, res) => {
 
         let lastchangedstring = ""
         
-        if (lastchangedpartnum == part.part_num) {
+        if (lastchangedpartnum == part.part_number) {
           lastchangedstring = "Last changed " + lastchangedfield + " to " + lastchangedvalue + " on " + lastchangeddate;
         }
 
@@ -163,15 +171,16 @@ app.get('/parts', (req, res) => {
 }
 });
 
-  app.post('/updateinventory', (req, res) => {
-    let { part_num, directus_id, newInventory } = req.body;
+app.post('/updateinventory', (req, res) => {
+    //console.log(req.body);
+    let { part_number, id, newInventory } = req.body;
 
     const today = dateformat(new Date());
     
-    axios.get(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`)
+    axios.get(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`)
     .then(response => {
       const part = response.data.data;
-    if(part.inventory_history !== null){
+    if(part.inventory_history != null){
         oldInventory = JSON.parse(JSON.stringify(part.inventory_history));
     }
     else {
@@ -187,7 +196,7 @@ app.get('/parts', (req, res) => {
 
     
     axios
-    .patch(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`, {
+    .patch(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`, {
         inventory_history: updatedInventoryString,
         current_inventory: newInventory
     })
@@ -195,10 +204,10 @@ app.get('/parts', (req, res) => {
         lastchangedfield = "inventory";
         lastchangedvalue = newInventory;
         lastchangeddate = today;
-        lastchangedpartnum = part_num;
+        lastchangedpartnum = part_number;
 
       console.log('Inventory updated successfully:', response.data);
-      res.redirect(`/parts?partNumber=${part_num}`);
+      res.redirect(`parts?partNumber=${part_number}`);
     })
     .catch(error => {
       res.render('error', { error });
@@ -208,14 +217,14 @@ app.get('/parts', (req, res) => {
 
 
   app.post('/updatebackstock', (req, res) => {
-    let { part_num, directus_id, newBackstock } = req.body;
+    let { part_number, id, newBackstock } = req.body;
 
     const today = dateformat(new Date());
     
-    axios.get(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`)
+    axios.get(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`)
     .then(response => {
       const part = response.data.data;
-    if(part.backstock_history !== null){
+    if(part.backstock_history != null){
         oldBackstock = JSON.parse(JSON.stringify(part.backstock_history));
     }
     else {
@@ -230,7 +239,7 @@ app.get('/parts', (req, res) => {
     const updatedBackstockString = JSON.stringify(sortedBackstockHistory);
     
     axios
-    .patch(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`, {
+    .patch(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`, {
         backstock_history: updatedBackstockString,
         current_backstock: newBackstock
     })
@@ -238,9 +247,9 @@ app.get('/parts', (req, res) => {
         lastchangedfield = "backstock";
         lastchangedvalue = newBackstock;
         lastchangeddate = today;
-        lastchangedpartnum = part_num;
+        lastchangedpartnum = part_number;
       console.log('Backstock updated successfully:', response.data);
-      res.redirect(`/parts?partNumber=${part_num}`);
+      res.redirect(`parts?partNumber=${part_number}`);
     })
     .catch(error => {
       res.render('error', { error });
@@ -250,26 +259,26 @@ app.get('/parts', (req, res) => {
   });
 
   app.post('/updatepricesupplierpurchaselink', (req, res) => {
-    let { part_num, directus_id, newPrice, newSupplier, newPurchaseLink } = req.body;
+    let { part_number, id, newPrice, newSupplier, newPurchaseLink } = req.body;
 
     const today = dateformat(new Date());
 
-      axios.get(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`)
+      axios.get(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`)
       .then(response => {
         const part = response.data.data;
-      if(part.price_history !== null){
+      if(part.price_history != null){
           oldPrice = JSON.parse(JSON.stringify(part.price_history));
       }
       else {
           oldPrice = {};
       }
-      if(part.supplier_history !== null){
+      if(part.supplier_history != null){
         oldSupplier = JSON.parse(JSON.stringify(part.supplier_history));
     }
     else {
         oldSupplier = {};
     }
-    if(part.purchase_link_history !== null){
+    if(part.purchase_link_history != null){
       oldPurchaseLink = JSON.parse(JSON.stringify(part.purchase_link_history));
   }
   else {
@@ -307,7 +316,7 @@ app.get('/parts', (req, res) => {
     const updatedPurchaseLinkString = JSON.stringify(sortedPurchaseLinkHistory);
   
       axios
-      .patch(`${iorefURL}/items/parts/${directus_id}?access_token=${accessToken}`, {
+      .patch(`${iorefURL}/items/parts/${id}?access_token=${accessToken}`, {
           price_history: updatedPriceString,
           supplier_history: updatedSupplierString,
           purchase_link_history: updatedPurchaseLinkString,
@@ -321,12 +330,12 @@ app.get('/parts', (req, res) => {
           lastchangedfield = "Price / Supplier / Purchase Link";
           lastchangedvalue = newPrice + " / " + newSupplier + " / " + newPurchaseLink;
           lastchangeddate = today;
-          lastchangedpartnum = part_num;
+          lastchangedpartnum = part_number;
         console.log('Price updated successfully:', response.data);
         console.log('Supplier updated successfully:', response.data);
         console.log('Purchase Link updated successfully:', response.data);
 
-        res.redirect(`/parts?partNumber=${part_num}`);
+        res.redirect(`parts?partNumber=${part_number}`);
 
       })
       .catch(error => {

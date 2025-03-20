@@ -12,7 +12,7 @@ def parse_col_normal(data, linedata, field, og_field='', required=False, default
     og_field = field
 
   actual_data = linedata[og_field]
-  if len(actual_data) == 0:
+  if actual_data and len(actual_data) == 0:
     if required:
       data[field] = default_val
 
@@ -31,12 +31,15 @@ def parse_col_dictionary(data, linedata, field, og_field):
   while col_name in linedata:
     cell = linedata[col_name]
 
-    if len(cell) == 0:
+    if cell and len(cell) == 0:
       i += 1
       col_name = og_field + str(i)
       continue
 
-    cellSplit = cell.split(":")
+    cellSplit = []
+    if cell:
+      cellSplit = cell.split(":")
+
     if len(cellSplit) != 2:
       # malformed cell; skip
       log_message += f"Malformed cell split: could not find both count and date on item #{linedata['part_num']} {col_name} : {cell}\n"
@@ -71,7 +74,6 @@ def parse_col_dictionary(data, linedata, field, og_field):
 
     date_real = datetime.datetime(year, month, day)
     date_formatted = date_real.strftime("%Y-%m-%d %H:%M:%S")
-
     dictionary[date_formatted] = count
 
     i += 1
@@ -102,9 +104,12 @@ with open('data.csv', newline='') as csvfile:
 
     # Process the current line
     data = {}
-    currentLine['price_per'] = currentLine['price_per'].replace("$", "")
-    currentLine['price_per'] = currentLine['price_per'].replace(",", "")
-    currentLine['price_per'] = currentLine['price_per'].strip()
+    if currentLine['price_per']:
+      currentLine['price_per'] = currentLine['price_per'].replace("$", "")
+    if currentLine['price_per']:
+      currentLine['price_per'] = currentLine['price_per'].replace(",", "")
+    if currentLine['price_per']:
+      currentLine['price_per'] = currentLine['price_per'].strip()
 
     ### Required Fields
     # *part_num: Listed as part_num in the CSV
@@ -127,7 +132,8 @@ with open('data.csv', newline='') as csvfile:
       # empty row - skip
       continue
 
-    data["status"] = string.capwords(data["status"])
+    if data["status"]:
+      data["status"] = string.capwords(data["status"])
 
     # description: Listed as description
     # min_quantity: Listed as min_quantity
@@ -140,15 +146,17 @@ with open('data.csv', newline='') as csvfile:
     data = parse_col_normal(data, currentLine, "supplier_part_num", og_field="supplier_part_number")
     data = parse_col_normal(data, currentLine, "label_text")
 
-    if "min_quantity" in data and not data["min_quantity"].isdigit():
+    if data["min_quantity"] and "min_quantity" in data and not data["min_quantity"].isdigit():
       data["min_quantity"] = "0"
-    if "max_quantity" in data and not data["max_quantity"].isdigit():
+    if data["max_quantity"] and "max_quantity" in data and not data["max_quantity"].isdigit():
       data["max_quantity"] = "0"
 
     # inventory_history: a JSON thing that has key = date as string as "YYYY-MM-DD HH:MM:SS" and value as the inventory number in a string for that date. You will have to create an inventory history for each part by parsing and combining the values from each of the inventory1, inventory2, inventory3,... columns
     # backstock_history: same as above but with backstock
     data = parse_col_dictionary(data, currentLine, "inventory_history", "inventory")
+    #data = parse_col_dictionary(data, currentLine, "latest_inventory_date", "inventory")
     data = parse_col_dictionary(data, currentLine, "backstock_history", "back_stock")
+    #data = parse_col_dictionary(data, currentLine, "latest_backstock_date", "back_stock")
     
     # price_history: same as above, but there's only one price (Listed as price_per). Just take today's date
     # supplier_history: same as price. Listed as supplier. Use today's date

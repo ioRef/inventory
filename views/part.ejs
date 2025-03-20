@@ -43,15 +43,15 @@
 <!-- find.ejs -->
 
 <div class = "part-info">
-    <a href="/parts">back to all parts</a><br><br>
- <form action="/parts" method="GET">
+    <a href="parts">back to all parts</a><br><br>
+ <form action="parts" method="GET">
     <input type="text" name="partNumber" placeholder="Enter Part Number">
     <button type="submit">Search</button>
   </form>
 </div>
 
 
-  <h1><%= `${part.part_num} - ${part.short_name} - ${part.location}` %></h1>
+  <h1><%= `${part.part_number} - ${part.name} - ${part.location}` %></h1>
 
   <% if (lastchangedstring !== "") { %>
     <div class="confirmation-msg">
@@ -67,11 +67,11 @@
 </div>
 
   <div class="record-inventory">
-    <form action="/updateinventory" method="POST">
+    <form action="updateinventory" method="POST">
         <div class="input-field">
         <label for="newInventory">Record new inventory:</label>
-        <input type="hidden" name="part_num" value="<%= part.part_num %>">
-        <input type="hidden" name="directus_id" value="<%= part.directus_id %>">
+        <input type="hidden" name="part_number" value="<%= part.part_number %>">
+        <input type="hidden" name="id" value="<%= part.id %>">
         <input required type="number" id="newInventory" name="newInventory">
         <span><%= part.unit %></span>
         <button class="save-btn" type="submit">Update Inventory</button>
@@ -79,10 +79,10 @@
     </form>
 
     <div class="input-field">
-        <form action="/updatebackstock" method="POST">
+        <form action="updatebackstock" method="POST">
       <label for="newBackstock">Record new backstock:</label>
-      <input type="hidden" name="part_num" value="<%= part.part_num %>">
-      <input type="hidden" name="directus_id" value="<%= part.directus_id %>">
+      <input type="hidden" name="part_number" value="<%= part.part_number %>">
+      <input type="hidden" name="id" value="<%= part.id %>">
       <input required type="number" id="newBackstock"  name="newBackstock">
       <span><%= part.unit %></span>
       <button class="save-btn" type="submit">Update Backstock</button>
@@ -97,11 +97,11 @@
 </div>
 
   <div class="record-inventory">
-    <form action="/updatepricesupplierpurchaselink" method="POST">
+    <form action="updatepricesupplierpurchaselink" method="POST">
         <div class="input-field">
         <label for="newPrice">Record new price:</label>
-        <input type="hidden" name="part_num" value="<%= part.part_num %>">
-        <input type="hidden" name="directus_id" value="<%= part.directus_id %>">
+        <input type="hidden" name="part_number" value="<%= part.part_number %>">
+        <input type="hidden" name="id" value="<%= part.id %>">
         <span>$</span>
         <input required type="decimal" id="newPrice" name="newPrice">
         </div>
@@ -157,8 +157,8 @@
     <h1> Details </h1>
     <div class="part-info">
         <div class="input-field">
-          <label class="label" for="shortName">Short Name:</label>
-          <span><%= part.short_name %></span>
+          <label class="label" for="name">Name:</label>
+          <span><%= part.name %></span>
         </div>
 
         <div class="input-field">
@@ -211,7 +211,12 @@
 
         <div class="input-field">
           <label class="label" for="inventoryHistory">Inventory History:</label>
-          <pre><code><%= JSON.stringify(part.inventory_history.reverse, null, 2) %></code></pre>
+	  <% if (part.inventory_history != null) { %>
+          <pre><code><%#= JSON.stringify(part.inventory_history.reverse, null, 2) %><%= JSON.stringify(part.inventory_history, null, 2) %></code></pre>
+	  </code></pre>
+	  <% } else { %>
+	  N/A
+	  <% } %>
         </div>
         
         <div class="input-field">
@@ -246,8 +251,8 @@
         const inventory_values = <%- JSON.stringify(inventory_values) %>;
         const chartbackstock_dates = <%- JSON.stringify(chartbackstock_dates) %>;
         const backstock_values = <%- JSON.stringify(backstock_values) %>;
-        const minquantity = <%- JSON.stringify(minquantity) %> ?? -1;
-        const maxquantity = <%- JSON.stringify(maxquantity) %> ?? -1;
+        const minquantity = <%= JSON.stringify(minquantity) %> ?? -1;
+        const maxquantity = <%= JSON.stringify(maxquantity) %> ?? -1;
 
         const inventorybackstock_dates = [...new Set([...chartinventory_dates, ...chartbackstock_dates])];
         inventorybackstock_dates.sort();
